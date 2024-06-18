@@ -48,3 +48,4 @@ class Board:
         display += '-' * (2 * self.cols - 1) + '\n'
         display += ' '.join(str(i) for i in range(self.cols)) + '\n'
         return display
+1
