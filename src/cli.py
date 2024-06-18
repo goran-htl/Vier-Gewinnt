@@ -1,3 +1,4 @@
+# Furkan Güyen
 from board import Board
 from player import Player
 
