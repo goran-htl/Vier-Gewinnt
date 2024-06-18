@@ -1,4 +1,4 @@
-# board.py
+# Goran Nastasijevic
 
 class Board:
     def __init__(self, dimension_sizes):
