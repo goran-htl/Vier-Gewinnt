@@ -1,18 +1,21 @@
 import unittest
-from src.game import Game
-from src.board import Board
-from src.player import Player
+from game import ConnectFourCLI
+from board import Board
+
 
 class TestGame(unittest.TestCase):
     def test_game_initialization(self):
-        game = Game()
+        game = ConnectFourCLI()
         self.assertIsInstance(game.board, Board)
-        self.assertEqual(len(game.players), 2)
-        self.assertIsInstance(game.players[0], Player)
-        self.assertIsInstance(game.players[1], Player)
-        self.assertEqual(game.current_player, 0)
+        self.assertEqual(game.board.rows, 6)
+        self.assertEqual(game.board.cols, 7)
 
-    # Hier können weitere Tests hinzugefügt werden
+    def test_switch_player(self):
+        game = ConnectFourCLI()
+        first_player = game.current_player
+        game.switch_player()
+        self.assertNotEqual(game.current_player, first_player)
+
 
 if __name__ == '__main__':
     unittest.main()
