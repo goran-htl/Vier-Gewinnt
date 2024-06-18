@@ -6,7 +6,10 @@ class TestBoard(unittest.TestCase):
     def test_drop_piece(self):
         board = Board()
         self.assertTrue(board.drop_piece(0, 'X'))
-        self.assertEqual(board.grid[-1][0], 'X')  # Hier sollte 'grid' anstelle von 'board' verwendet werden
+        self.assertEqual(board.grid[-1][0], 'X')
+        # Das zweite Drop in derselben Spalte sollte False zurückgeben, wenn die Spalte voll ist.
+        for _ in range(board.rows - 1):
+            board.drop_piece(0, 'X')
         self.assertFalse(board.drop_piece(0, 'X'))
 
     def test_is_winner(self):
@@ -25,3 +28,4 @@ class TestBoard(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
