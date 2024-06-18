@@ -9,7 +9,7 @@ class Board:
             if self.grid[row][col] == ' ':
                 self.grid[row][col] = piece
                 return True
-        return False
+        return False  # Rückgabe False, wenn die Spalte voll ist
 
     def is_winner(self, piece):
         # Horizontal check
