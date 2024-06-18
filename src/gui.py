@@ -1,57 +1,64 @@
 import tkinter as tk
 from tkinter import messagebox
 from board import Board
+from player import Player
 
-class Connect4GUI:
+
+class ConnectFourGUI:
     def __init__(self, root):
         self.root = root
-        self.board = Board()
-        self.current_player = 'X'
-        self.setup_gui()
-
-    def setup_gui(self):
         self.root.title("Vier Gewinnt")
 
+        self.board = Board()
+        self.players = [Player("Player 1", 'X'), Player("Player 2", 'O')]
+        self.current_player = 0
+
+        self.create_widgets()
+
+    def create_widgets(self):
         self.buttons = []
         for col in range(self.board.cols):
-            button = tk.Button(self.root, text=str(col), font=('Helvetica', 14), width=4,
-                               command=lambda c=col: self.drop_piece(c))
+            button = tk.Button(self.root, text=str(col), command=lambda c=col: self.drop_piece(c))
             button.grid(row=0, column=col)
             self.buttons.append(button)
 
-        self.canvas = tk.Canvas(self.root, width=self.board.cols * 60, height=self.board.rows * 60)
-        self.canvas.grid(row=1, columnspan=self.board.cols)
-
-        self.draw_board()
-
-    def draw_board(self):
-        self.canvas.delete("pieces")
-        for row in range(self.board.rows):
+        self.labels = []
+        for row in range(1, self.board.rows + 1):
+            row_labels = []
             for col in range(self.board.cols):
-                if self.board.grid[row][col] != ' ':
-                    color = 'yellow' if self.board.grid[row][col] == 'X' else 'red'
-                    x0, y0 = col * 60 + 10, row * 60 + 10
-                    x1, y1 = (col + 1) * 60 - 10, (row + 1) * 60 - 10
-                    self.canvas.create_oval(x0, y0, x1, y1, fill=color, tags="pieces")
+                label = tk.Label(self.root, text=' ', width=5, height=2, borderwidth=2, relief="groove")
+                label.grid(row=row, column=col)
+                row_labels.append(label)
+            self.labels.append(row_labels)
 
     def drop_piece(self, col):
-        if self.board.drop_piece(col, self.current_player):
-            self.draw_board()
-            if self.board.check_winner(self.current_player):
-                messagebox.showinfo("Spiel beendet", f"Spieler {self.current_player} hat gewonnen!")
+        player = self.players[self.current_player]
+        if self.board.drop_piece(col, player.piece):
+            self.update_board()
+            if self.board.is_winner(player.piece):
+                messagebox.showinfo("Spielende", f"{player.name} hat gewonnen!")
+                self.reset_board()
+            elif self.board.is_full():
+                messagebox.showinfo("Spielende", "Unentschieden! Das Spielfeld ist voll.")
                 self.reset_board()
             else:
-                self.current_player = 'O' if self.current_player == 'X' else 'X'
+                self.current_player = (self.current_player + 1) % 2
+        else:
+            messagebox.showwarning("Ungültiger Zug", "Diese Spalte ist voll. Bitte wähle eine andere Spalte.")
+
+    def update_board(self):
+        for row in range(self.board.rows):
+            for col in range(self.board.cols):
+                piece = self.board.grid[row][col]
+                self.labels[row][col].config(text=piece if piece else ' ')
 
     def reset_board(self):
         self.board = Board()
-        self.current_player = 'X'
-        self.draw_board()
+        self.current_player = 0
+        self.update_board()
 
-def main():
-    root = tk.Tk()
-    app = Connect4GUI(root)
-    root.mainloop()
 
 if __name__ == "__main__":
-    main()
+    root = tk.Tk()
+    app = ConnectFourGUI(root)
+    root.mainloop()
