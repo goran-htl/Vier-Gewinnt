@@ -1,58 +1,46 @@
 import socket
 import threading
-from board import Board
-from player import Player
 
-class ConnectFourServer:
-    def __init__(self, host='localhost', port=65432):
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind((host, port))
-        self.server.listen(2)
-        self.players = []
-        self.board = Board()
-        self.current_player = 0
-        print("Server gestartet. Warte auf Verbindungen...")
+clients = []
 
-    def handle_client(self, conn, addr, player):
-        print(f"Spieler {player.piece} verbunden: {addr}")
-        conn.sendall(f"Du bist Spieler {player.piece}".encode('utf-8'))
-        while True:
-            try:
-                data = conn.recv(1024)
-                if not data:
-                    break
-                col = int(data.decode('utf-8'))
-                if self.board.drop_piece(col, player.piece):
-                    if self.board.is_winner(player.piece):
-                        conn.sendall("GEWINNER".encode('utf-8'))
-                        break
-                    elif self.board.is_full():
-                        conn.sendall("UNENTSCHIEDEN".encode('utf-8'))
-                        break
-                    else:
-                        self.current_player = (self.current_player + 1) % 2
-                        self.broadcast_board()
-                else:
-                    conn.sendall("UNGÜLTIGER ZUG".encode('utf-8'))
-            except Exception as e:
-                print(f"Fehler: {e}")
+def handle_client(client_socket):
+    while True:
+        try:
+            message = client_socket.recv(1024).decode('utf-8')
+            if message:
+                broadcast(message, client_socket)
+            else:
+                remove(client_socket)
                 break
-        conn.close()
+        except:
+            continue
 
-    def broadcast_board(self):
-        board_str = str(self.board).encode('utf-8')
-        for player in self.players:
-            player.conn.sendall(board_str)
+def broadcast(message, connection):
+    for client in clients:
+        if client != connection:
+            try:
+                client.send(message.encode('utf-8'))
+            except:
+                remove(client)
 
-    def start(self):
-        while len(self.players) < 2:
-            conn, addr = self.server.accept()
-            player = Player(f"Spieler {len(self.players) + 1}", 'X' if len(self.players) == 0 else 'O')
-            player.conn = conn
-            self.players.append(player)
-            threading.Thread(target=self.handle_client, args=(conn, addr, player)).start()
-        print("Beide Spieler sind verbunden. Spiel startet.")
+def remove(connection):
+    if connection in clients:
+        clients.remove(connection)
+
+def main():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(('localhost', 12345))
+    server_socket.listen(2)
+
+    print("Server gestartet und wartet auf Verbindungen...")
+
+    while True:
+        client_socket, client_address = server_socket.accept()
+        clients.append(client_socket)
+        print(f"Verbindung von {client_address}")
+
+        threading.Thread(target=handle_client, args=(client_socket,)).start()
 
 if __name__ == "__main__":
-    server = ConnectFourServer()
-    server.start()
+    main()
+
