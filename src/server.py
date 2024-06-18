@@ -1,46 +1,58 @@
 import socket
 import threading
+from board import Board
 
 clients = []
+nicknames = []
+colors = ['X', 'O']
+board = Board()
 
-def handle_client(client_socket):
+def sende_an_alle(nachricht):
+    for client in clients:
+        client.send(nachricht)
+
+def handle(client):
+    farbe = colors[len(clients) % 2]  # Weisen Sie 'X' dem ersten Spieler und 'O' dem zweiten zu
     while True:
         try:
-            message = client_socket.recv(1024).decode('utf-8')
-            if message:
-                broadcast(message, client_socket)
+            nachricht = client.recv(1024).decode('utf-8')
+            spalte = int(nachricht)
+            if board.drop_piece(spalte, farbe):
+                sende_an_alle(f"{spalte}".encode('utf-8'))
+                if board.check_winner(farbe):
+                    sende_an_alle(f"{farbe} gewinnt!".encode('utf-8'))
+                    board.reset()
             else:
-                remove(client_socket)
-                break
+                client.send("Ungültiger Zug".encode('utf-8'))
         except:
-            continue
+            index = clients.index(client)
+            clients.remove(client)
+            client.close()
+            nickname = nicknames[index]
+            sende_an_alle(f'{nickname} hat das Spiel verlassen!'.encode('utf-8'))
+            nicknames.remove(nickname)
+            break
 
-def broadcast(message, connection):
-    for client in clients:
-        if client != connection:
-            try:
-                client.send(message.encode('utf-8'))
-            except:
-                remove(client)
-
-def remove(connection):
-    if connection in clients:
-        clients.remove(connection)
-
-def main():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('localhost', 12345))
-    server_socket.listen(2)
-
-    print("Server gestartet und wartet auf Verbindungen...")
-
+def empfange():
     while True:
-        client_socket, client_address = server_socket.accept()
-        clients.append(client_socket)
-        print(f"Verbindung von {client_address}")
+        client, address = server.accept()
+        print(f"Verbunden mit {str(address)}")
 
-        threading.Thread(target=handle_client, args=(client_socket,)).start()
+        client.send('VERBUNDEN'.encode('utf-8'))
+        nickname = client.recv(1024).decode('utf-8')
+        nicknames.append(nickname)
+        clients.append(client)
 
-if __name__ == "__main__":
-    main()
+        print(f"Nickname ist {nickname}")
+        sende_an_alle(f"{nickname} hat das Spiel betreten!".encode('utf-8'))
+        client.send('Mit dem Server verbunden!'.encode('utf-8'))
 
+        thread = threading.Thread(target=handle, args=(client,))
+        thread.start()
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(('127.0.0.1', 5555))
+server.listen()
+
+print("Server hört zu...")
+empfange()
